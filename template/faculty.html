@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en" id="htmlRoot">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LibraManager — Faculty Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+    <style>
+        /* FOUC Prevention */
+        .hidden {
+            display: none !important;
+        }
+
+        svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface2: #263348;
+            --border: #334155;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --input: #0f172a;
+            --accent: #7c3aed;
+            --accent2: #8b5cf6;
+        }
+
+        .light {
+            --bg: #f1f5f9;
+            --surface: #ffffff;
+            --surface2: #f8fafc;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --muted: #64748b;
+            --input: #f8fafc;
+            --accent: #7c3aed;
+            --accent2: #8b5cf6;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            transition: background .4s, color .3s;
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--surface);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 4px;
+        }
+
+        /* transitions */
+        * {
+            transition: background-color .35s ease, border-color .3s ease, color .25s ease, box-shadow .3s ease;
+        }
+
+        /* SIDEBAR */
+        #sidebar {
+            width: 240px;
+            flex-shrink: 0;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            color: var(--muted);
+            font-size: .875rem;
+            font-weight: 500;
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link:hover {
+            background: rgba(124, 58, 237, .1);
+            color: var(--text);
+        }
+
+        .nav-link.active {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(124, 58, 237, .3);
+        }
+
+        .nav-link svg {
+            transition: transform .2s ease;
+            flex-shrink: 0;
+        }
+
+        .nav-link:hover svg {
+            transform: rotate(-8deg) scale(1.1);
+        }
+
+        /* MAIN */
+        #main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(12px);
+        }
+
+        main {
+            flex: 1;
+            padding: 28px;
+            overflow-y: auto;
+        }
+
+        /* CARDS */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 22px;
+            transition: transform .22s cubic-bezier(.34, 1.56, .64, 1), box-shadow .22s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(124, 58, 237, .12);
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 14px 36px rgba(124, 58, 237, .18);
+            transition: transform .22s cubic-bezier(.34, 1.56, .64, 1), box-shadow .22s ease;
+        }
+
+        /* SECTION */
+        .section {
+            display: none;
+            animation: fadeSlide .35s cubic-bezier(.22, 1, .36, 1) both;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeSlide {
+            from {
+                opacity: 0;
+                transform: translateY(14px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* TABLE */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .85rem;
+        }
+
+        thead th {
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+            font-size: .72rem;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--muted);
+            background: var(--surface2);
+            position: sticky;
+            top: 0;
+        }
+
+        tbody tr {
+            border-top: 1px solid var(--border);
+            transition: background .15s;
+        }
+
+        tbody tr:hover {
+            background: rgba(124, 58, 237, .06);
+        }
+
+        tbody td {
+            padding: 10px 14px;
+            color: var(--text);
+        }
+
+        .table-wrap {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            max-height: 380px;
+            overflow-y: auto;
+        }
+
+        /* BADGE */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 10px;
+            border-radius: 9999px;
+            font-size: .72rem;
+            font-weight: 600;
+        }
+
+        /* BTN */
+        .btn {
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: .85rem;
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(124, 58, 237, .3);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        /* INPUT */
+        .lm-input {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--input);
+            color: var(--text);
+            font-size: .875rem;
+            outline: none;
+        }
+
+        .lm-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, .2);
+        }
+
+        /* CHART */
+        .chart-wrap {
+            position: relative;
+            height: 220px;
+        }
+
+        @keyframes chartReveal {
+            from {
+                opacity: 0;
+                transform: scale(.96);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .chart-wrap canvas {
+            animation: chartReveal .55s cubic-bezier(.22, 1, .36, 1) both;
+        }
+
+        /* COUNTER */
+        @keyframes countUp {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stat-num {
+            animation: countUp .5s ease both;
+        }
+
+        /* THEME TOGGLE */
+        .theme-pill {
+            width: 44px;
+            height: 24px;
+            border-radius: 12px;
+            background: rgba(124, 58, 237, .3);
+            position: relative;
+            cursor: pointer;
+            border: 1px solid rgba(124, 58, 237, .4);
+        }
+
+        .theme-knob {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            transition: transform .3s cubic-bezier(.34, 1.56, .64, 1);
+        }
+
+        .light .theme-knob {
+            transform: translateX(20px);
+        }
+
+        /* TOAST */
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(14px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .toast {
+            animation: toastIn .28s ease both;
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 100;
+            padding: 12px 18px;
+            border-radius: 14px;
+            color: #fff;
+            font-size: .85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, .3);
+            min-width: 220px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar">
+        <div style="padding:20px 16px;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div
+                    style="width:36px;height:36px;border-radius:12px;background:var(--accent);display:flex;align-items:center;justify-content:center;">
+                    <svg class="w-5 h-5" style="color:#fff;width:18px;height:18px;" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                </div>
+                <div>
+                    <p style="font-weight:700;font-size:.9rem;color:var(--text);">LibraManager</p>
+                    <p style="font-size:.72rem;color:var(--accent2);">Faculty Portal</p>
+                </div>
+            </div>
+        </div>
+
+        <nav style="padding:12px 10px;flex:1;display:flex;flex-direction:column;gap:4px;">
+            <p
+                style="font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:8px 10px 4px;">
+                Main</p>
+            <button class="nav-link active" onclick="showSec('dashboard',this)">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Dashboard
+            </button>
+            <button class="nav-link" onclick="showSec('browse',this)">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Browse Books
+            </button>
+            <button class="nav-link" onclick="showSec('mybooks',this)">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13" />
+                </svg>
+                My Books
+            </button>
+            <button class="nav-link" onclick="showSec('fines',this)">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Fine Status
+            </button>
+        </nav>
+
+        <div style="padding:14px;border-top:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div
+                    style="width:34px;height:34px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:.85rem;">
+                    F</div>
+                <div>
+                    <p style="font-size:.85rem;font-weight:600;color:var(--text);" id="greetingName">Faculty</p>
+                    <a href="javascript:void(0)" onclick="logoutUser()"
+                        style="font-size:.72rem;color:#f87171;text-decoration:none;transition:color .2s ease;"
+                        onmouseover="this.style.color='#fca5a5'" onmouseout="this.style.color='#f87171'">Logout</a>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div id="main">
+        <!-- HEADER -->
+        <header>
+            <div>
+                <h1 id="pageTitle" style="font-size:1.1rem;font-weight:700;color:var(--text);">Dashboard</h1>
+                <p id="pageDate" style="font-size:.75rem;color:var(--muted);"></p>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+                <!-- Theme Toggle -->
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:13px;color:var(--muted);">☀️</span>
+                    <div class="theme-pill" onclick="toggleTheme()">
+                        <div class="theme-knob"></div>
+                    </div>
+                    <span style="font-size:13px;color:var(--muted);">🌙</span>
+                </div>
+                <a href="/"
+                    style="padding:8px 16px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);font-size:.8rem;font-weight:600;color:var(--muted);text-decoration:none;">←
+                    Home</a>
+            </div>
+        </header>
+
+        <!-- SECTIONS -->
+        <main>
+
+            <!-- DASHBOARD -->
+            <div id="sec-dashboard" class="section active">
+                <div
+                    style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px;">
+                    <div class="stat-card">
+                        <div
+                            style="width:42px;height:42px;border-radius:12px;background:rgba(124,58,237,.15);display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+                            📚</div>
+                        <p class="stat-num" id="fc-totalBooks"
+                            style="font-size:2rem;font-weight:800;color:var(--text);">0</p>
+                        <p style="font-size:.8rem;color:var(--muted);margin-top:2px;">Total Books</p>
+                    </div>
+                    <div class="stat-card">
+                        <div
+                            style="width:42px;height:42px;border-radius:12px;background:rgba(16,185,129,.15);display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+                            ✅</div>
+                        <p class="stat-num" id="fc-borrowed" style="font-size:2rem;font-weight:800;color:var(--text);">0
+                        </p>
+                        <p style="font-size:.8rem;color:var(--muted);margin-top:2px;">My Borrowed</p>
+                    </div>
+                    <div class="stat-card">
+                        <div
+                            style="width:42px;height:42px;border-radius:12px;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+                            ⏰</div>
+                        <p class="stat-num" id="fc-overdue" style="font-size:2rem;font-weight:800;color:#f59e0b;">0</p>
+                        <p style="font-size:.8rem;color:var(--muted);margin-top:2px;">Overdue</p>
+                    </div>
+                    <div class="stat-card">
+                        <div
+                            style="width:42px;height:42px;border-radius:12px;background:rgba(239,68,68,.15);display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+                            💰</div>
+                        <p class="stat-num" id="fc-fine" style="font-size:2rem;font-weight:800;color:#ef4444;">₹0</p>
+                        <p style="font-size:.8rem;color:var(--muted);margin-top:2px;">Pending Fine</p>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;">
+                    <div class="card">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                            <p style="font-weight:700;color:var(--text);">My Borrowing History</p>
+                            <span class="badge" style="background:rgba(124,58,237,.15);color:var(--accent2);">Last 12
+                                months</span>
+                        </div>
+                        <div class="chart-wrap"><canvas id="fc-barChart"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                            <p style="font-weight:700;color:var(--text);">Availability</p>
+                            <span class="badge"
+                                style="background:rgba(124,58,237,.15);color:var(--accent2);">Live</span>
+                        </div>
+                        <div class="chart-wrap"><canvas id="fc-pieChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BROWSE BOOKS -->
+            <div id="sec-browse" class="section">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+                    <input type="text" class="lm-input" id="browseSearch"
+                        placeholder="🔍 Search by title, author, genre…" oninput="filterBooks()"
+                        style="max-width:360px;" />
+                    <select class="lm-input" id="browseGenre" onchange="filterBooks()" style="max-width:180px;">
+                        <option value="">All Genres</option>
+                        <option>Technology</option>
+                        <option>Science</option>
+                        <option>Mathematics</option>
+                        <option>History</option>
+                        <option>Literature</option>
+                        <option>Reference</option>
+                    </select>
+                </div>
+                <div class="card" style="padding:0;overflow:hidden;">
+                    <div class="table-wrap" style="max-height:480px;border:none;border-radius:0;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Book Title</th>
+                                    <th>Author</th>
+                                    <th>Genre</th>
+                                    <th>Available</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="browseTbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MY BOOKS -->
+            <div id="sec-mybooks" class="section">
+                <div class="card" style="padding:0;overflow:hidden;">
+                    <div
+                        style="padding:18px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);">
+                        <p style="font-weight:700;color:var(--text);">My Borrowed Books</p>
+                        <span id="fc-myBooksCount" class="badge"
+                            style="background:rgba(124,58,237,.15);color:var(--accent2);"></span>
+                    </div>
+                    <div class="table-wrap" style="max-height:440px;border:none;border-radius:0;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Req ID</th>
+                                    <th>Issue ID</th>
+                                    <th>Book</th>
+                                    <th>Issue Date</th>
+                                    <th>Due Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="myBooksTbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FINE STATUS -->
+            <div id="sec-fines" class="section">
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;">
+                    <div class="stat-card" style="border-left:4px solid #ef4444;">
+                        <p style="font-size:.75rem;color:var(--muted);">Overdue Books</p>
+                        <p id="fc-fineOverdue" style="font-size:1.8rem;font-weight:800;color:#ef4444;">0</p>
+                    </div>
+                    <div class="stat-card" style="border-left:4px solid #f59e0b;">
+                        <p style="font-size:.75rem;color:var(--muted);">Unpaid Fine</p>
+                        <p id="fc-fineUnpaid" style="font-size:1.8rem;font-weight:800;color:#f59e0b;">₹0</p>
+                    </div>
+                    <div class="stat-card" style="border-left:4px solid #10b981;">
+                        <p style="font-size:.75rem;color:var(--muted);">Fine Paid</p>
+                        <p id="fc-finePaid" style="font-size:1.8rem;font-weight:800;color:#10b981;">₹0</p>
+                    </div>
+                </div>
+                <div class="card" style="padding:0;overflow:hidden;">
+                    <div class="table-wrap" style="max-height:400px;border:none;border-radius:0;">
+                        <th>Issue ID</th>
+                        <th>Book</th>
+                        <th>Due Date</th>
+                        <th>Days Over</th>
+                        <th>Fine</th>
+                        <th>Status</th>
+                        </tr>
+                        </thead>
+                        <tbody id="fc-fineTbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+
+
+    <script>
+        // ─── THEME ───────────────────────────────────────────────
+        const html = document.getElementById('htmlRoot');
+        const saved = localStorage.getItem('lm-theme') || 'dark';
+        if (saved === 'light') html.classList.add('light');
+        function toggleTheme() {
+            html.classList.toggle('light');
+            localStorage.setItem('lm-theme', html.classList.contains('light') ? 'light' : 'dark');
+        }
+
+        // ─── DATE ────────────────────────────────────────────────
+        document.getElementById('pageDate').textContent = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+        // ─── SHARED DATA (same seed as app.js) ───────────────────
+        let uiBooks = [];
+        let uiAllIssues = [];
+        const activeUserName = localStorage.getItem('activeUserName') || localStorage.getItem('activeUser') || 'Unknown';
+
+        // We will try to fetch the actual user_id (emp id) from an API if needed, 
+        // for now we'll assume the username is the ID (e.g., faculty name or emp id).
+        // Since login sets userName, let's use that as the user_id for requests.
+        const activeUserId = activeUserName;
+        document.getElementById('greetingName').textContent = activeUserName;
+
+        let myIssues = [];
+        const FINE_PER_DAY = 5;
+
+        async function loadData() {
+            try {
+                // Fetch library books
+                const booksRes = await fetch('/api/books');
+                if (booksRes.ok) {
+                    uiBooks = await booksRes.json();
+                }
+
+                // Fetch faculty's specific requests and issued books
+                const myBooksRes = await fetch(`/api/my-books/${activeUserId}`);
+                if (myBooksRes.ok) {
+                    myIssues = await myBooksRes.json();
+                }
+
+                // Check for newly approved books to notify user
+                const newlyApproved = myIssues.filter(i => i.status === 'APPROVED');
+                newlyApproved.forEach(issue => {
+                    const notifyKey = `notified_${issue.issueId || issue.request_id}_${issue.status}`;
+                    if (!localStorage.getItem(notifyKey)) {
+                        showToast(`Your request for "${issue.bookTitle}" has been approved! Please collect it.`, '#34d399');
+                        localStorage.setItem(notifyKey, 'true');
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error loading data:", error);
+                showToast("Failed to load data from server", "#ef4444");
+            }
+
+            initDashboard();
+            if (document.getElementById('sec-browse').classList.contains('active')) {
+                renderBrowse();
+            }
+            if (document.getElementById('sec-mybooks').classList.contains('active')) {
+                renderMyBooks();
+            }
+            if (document.getElementById('sec-fines').classList.contains('active')) {
+                renderFines();
+            }
+        }
+
+        function calcFine(issue) {
+            if (!issue.dueDate) return { overdue: 0, fine: 0 };
+            const over = Math.max(0, Math.floor((new Date() - new Date(issue.dueDate)) / 86400000));
+            return { overdue: over, fine: over * FINE_PER_DAY };
+        }
+
+        function daysLeft(i) {
+            if (!i.dueDate) return 0;
+            return Math.ceil((new Date(i.dueDate) - new Date()) / 86400000);
+        }
+
+        // ─── COUNTER ANIMATION ───────────────────────────────────
+        function animCount(el, target, dur = 700) {
+            const start = performance.now();
+            function tick(now) {
+                const p = Math.min((now - start) / dur, 1);
+                const e = 1 - Math.pow(1 - p, 3);
+                el.textContent = Math.round(target * e);
+                if (p < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        }
+
+        // ─── SECTION SWITCH ──────────────────────────────────────
+        const titles = { dashboard: 'Dashboard', browse: 'Browse Books', mybooks: 'My Books', fines: 'Fine Status' };
+        function showSec(name, btn) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+            document.getElementById('sec-' + name).classList.add('active');
+            if (btn) btn.classList.add('active');
+            document.getElementById('pageTitle').textContent = titles[name] || name;
+            if (name === 'mybooks') renderMyBooks();
+            if (name === 'browse') renderBrowse();
+            if (name === 'fines') renderFines();
+        }
+
+        // ─── DASHBOARD ───────────────────────────────────────────
+        function initDashboard() {
+            const totalBooks = uiBooks.reduce((s, b) => s + b.copies, 0);
+            const borrowed = myIssues.filter(i => i.status === 'ISSUED').length;
+            const overdue = myIssues.filter(i => i.status === 'ISSUED' && i.dueDate && new Date(i.dueDate) < new Date()).length;
+            const fine = myIssues.reduce((s, i) => s + calcFine(i).fine, 0);
+
+            animCount(document.getElementById('fc-totalBooks'), totalBooks, 800);
+            animCount(document.getElementById('fc-borrowed'), borrowed, 600);
+            animCount(document.getElementById('fc-overdue'), overdue, 500);
+            document.getElementById('fc-fine').textContent = '₹' + fine;
+
+            initCharts();
+        }
+
+        // ─── CHARTS (animated) ───────────────────────────────────
+        function initCharts() {
+            const barCtx = document.getElementById('fc-barChart').getContext('2d');
+            const pieCtx = document.getElementById('fc-pieChart').getContext('2d');
+
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const data = new Array(12).fill(0);
+            myIssues.forEach(i => {
+                if (i.issueDate) {
+                    const m = parseInt(i.issueDate.split('-')[1], 10) - 1;
+                    if (!isNaN(m) && m >= 0 && m < 12) data[m]++;
+                }
+            });
+
+            new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Books Borrowed',
+                        data,
+                        backgroundColor: function (ctx) {
+                            const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 220);
+                            g.addColorStop(0, 'rgba(139,92,246,.85)');
+                            g.addColorStop(1, 'rgba(139,92,246,.2)');
+                            return g;
+                        },
+                        borderColor: '#8b5cf6', borderWidth: 1, borderRadius: 6, borderSkipped: false,
+                    }],
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    animation: { duration: 900, easing: 'easeOutQuart', delay: (c) => c.dataIndex * 60 },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { backgroundColor: '#1e293b', borderColor: '#334155', borderWidth: 1, titleColor: '#f8fafc', bodyColor: '#94a3b8', padding: 10 },
+                    },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+                        y: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#94a3b8', font: { size: 10 } }, beginAtZero: true },
+                    },
+                },
+            });
+
+            // Availability doughnut chart
+            const availBooks = uiBooks.reduce((s, b) => s + b.available, 0);
+            const issuedBooks = myIssues.filter(i => i.status === 'ISSUED' || i.status === 'active').length;
+
+            new Chart(pieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Available', 'Issued'],
+                    datasets: [{
+                        data: [availBooks || 1, issuedBooks || 0],
+                        backgroundColor: ['rgba(52,211,153,0.85)', 'rgba(99,102,241,0.85)'],
+                        borderColor: ['#10b981', '#6366f1'],
+                        borderWidth: 2, hoverOffset: 8,
+                    }],
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    animation: { animateRotate: true, animateScale: true, duration: 900, easing: 'easeOutBack' },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 10, usePointStyle: true } },
+                        tooltip: { backgroundColor: '#1e293b', borderColor: '#334155', borderWidth: 1, titleColor: '#f8fafc', bodyColor: '#94a3b8', padding: 10 },
+                    },
+                    cutout: '65%',
+                },
+            });
+        }
+
+        // ─── BROWSE BOOKS ────────────────────────────────────────
+        async function requestBook(bookId, bookTitle) {
+            try {
+                const response = await fetch('/api/request-book', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        bookId: bookId,
+                        userId: activeUserId,
+                        role: 'faculty'
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showToast(`Request sent for '${bookTitle}'`, '#7c3aed');
+                    loadData(); // Reload to update UI button statuses
+                } else {
+                    showToast(data.error || 'Failed to request book', '#ef4444');
+                }
+            } catch (error) {
+                console.error("Error requesting book:", error);
+                showToast('Server error during request', '#ef4444');
+            }
+        }
+
+        function renderBrowse() {
+            filterBooks();
+        }
+        function filterBooks() {
+            const q = (document.getElementById('browseSearch').value || '').toLowerCase();
+            const g = document.getElementById('browseGenre').value;
+            const filtered = uiBooks.filter(b =>
+                (!q || b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q) || (b.genre || b.category).toLowerCase().includes(q)) &&
+                (!g || b.genre === g || b.category === g));
+            const tbody = document.getElementById('browseTbody');
+            tbody.innerHTML = filtered.map(b => {
+                // Check if user has already requested or holds this book
+                const existingReq = myIssues.find(i => i.bookId === b.id && ['PENDING_APPROVAL', 'APPROVED', 'ISSUED'].includes(i.status));
+
+                let actionButtonHtml = '';
+                if (existingReq) {
+                    actionButtonHtml = `<button class="btn" style="padding:5px 14px;font-size:.78rem;background:var(--surface2);border:1px solid var(--border);color:var(--accent);cursor:not-allowed;">${existingReq.status.replace('_', ' ')}</button>`;
+                } else if (b.available > 0) {
+                    actionButtonHtml = `<button onclick="requestBook('${b.id}', '${b.title.replace(/'/g, "\\'")}')" class="btn btn-primary" style="padding:5px 14px;font-size:.78rem;">Request</button>`;
+                } else {
+                    actionButtonHtml = `<button class="btn" style="padding:5px 14px;font-size:.78rem;background:var(--surface2);border:1px solid var(--border);color:var(--muted);cursor:not-allowed;">Unavailable</button>`;
+                }
+
+                return `
+    <tr>
+      <td style="font-weight:600;">${b.title}</td>
+      <td style="color:var(--muted);">${b.author}</td>
+      <td><span class="badge" style="background:rgba(124,58,237,.15);color:#a78bfa;">${b.genre || b.category}</span></td>
+      <td>
+        <span class="badge" style="background:${b.available > 0 ? 'rgba(52,211,153,.15)' : 'rgba(239,68,68,.15)'};color:${b.available > 0 ? '#34d399' : '#f87171'};">
+          ${b.available > 0 ? b.available + ' avail.' : 'Unavailable'}
+        </span>
+      </td>
+      <td>${actionButtonHtml}</td>
+    </tr>`;
+            }).join('') || '<tr><td colspan="5" style="padding:30px;text-align:center;color:var(--muted);">No books found.</td></tr>';
+        }
+
+        // ─── MY BOOKS ────────────────────────────────────────────
+        function renderMyBooks() {
+            document.getElementById('fc-myBooksCount').textContent = myIssues.length + ' records';
+            const tbody = document.getElementById('myBooksTbody');
+            tbody.innerHTML = myIssues.map(i => {
+                let badgeHtml = '';
+                if (['PENDING_APPROVAL', 'REJECTED'].includes(i.status)) {
+                    badgeHtml = `<span class="badge" style="background:${i.status === 'PENDING_APPROVAL' ? 'rgba(245,158,11,.15)' : 'rgba(239,68,68,.15)'};color:${i.status === 'PENDING_APPROVAL' ? '#fbbf24' : '#f87171'};">${i.status.replace('_', ' ')}</span>`;
+                } else if (i.status === 'APPROVED') {
+                    badgeHtml = `<span class="badge" style="background:rgba(52,211,153,.15);color:#34d399;">Ready for Pickup</span>`;
+                } else if (i.status === 'active' || i.status === 'ISSUED') {
+                    badgeHtml = `<span class="badge" style="background:rgba(14,165,233,.15);color:#0ea5e9;">${i.status.replace('_', ' ')}</span>`;
+                } else {
+                    badgeHtml = `<span class="badge" style="background:rgba(52,211,153,.15);color:#34d399;">${i.status.replace('_', ' ')}</span>`;
+                }
+
+                return `
+    <tr>
+      <td style="font-family:monospace;color:#a78bfa;font-weight:600;">${i.request_id || '-'}</td>
+      <td style="font-family:monospace;color:var(--muted);">${i.issueId ? 'ISS-' + String(i.issueId).padStart(3, '0') : '-'}</td>
+      <td style="font-weight:600;">${i.bookTitle}</td>
+      <td style="color:var(--muted);">${i.issueDate || '-'}</td>
+      <td style="color:var(--muted);">${i.dueDate || '-'}</td>
+      <td>${badgeHtml}</td>
+    </tr>`;
+            }).join('') || '<tr><td colspan="6" style="padding:30px;text-align:center;color:var(--muted);">No requests or borrowed books found.</td></tr>';
+        }
+
+        // ─── FINES ───────────────────────────────────────────────
+        function renderFines() {
+            let unpaid = 0, paid = 0;
+            const rows = myIssues.filter(i => {
+                const { fine } = calcFine(i);
+                return fine > 0 || i.finePaid;
+            });
+            rows.forEach(i => { const { fine } = calcFine(i); if (i.finePaid) paid += fine; else unpaid += fine; });
+            const overdue = myIssues.filter(i => i.status === 'active' && new Date(i.dueDate) < new Date()).length;
+            document.getElementById('fc-fineOverdue').textContent = overdue;
+            document.getElementById('fc-fineUnpaid').textContent = '₹' + unpaid;
+            document.getElementById('fc-finePaid').textContent = '₹' + paid;
+
+            document.getElementById('fc-fineTbody').innerHTML = rows.map(i => {
+                const { overdue: od, fine } = calcFine(i);
+                return `<tr style="${od > 0 && !i.finePaid ? 'border-left:3px solid #ef4444;background:rgba(239,68,68,.05);' : ''}">
+      <td style="font-family:monospace;color:${od > 0 ? '#f87171' : '#a78bfa'};">${i.id}</td>
+      <td style="font-weight:600;">${i.bookTitle}</td>
+      <td>${i.dueDate}</td>
+      <td style="color:${od > 0 ? '#f87171' : 'var(--muted)'};">${od > 0 ? od + ' days' : 'On time'}</td>
+      <td style="font-weight:700;color:${fine > 0 ? '#fbbf24' : 'var(--muted)'};">₹${fine}</td>
+      <td><span class="badge" style="background:${i.finePaid ? 'rgba(52,211,153,.15)' : 'rgba(239,68,68,.15)'};color:${i.finePaid ? '#34d399' : '#f87171'};">${i.finePaid ? 'Paid' : 'Unpaid'}</span></td>
+    </tr>`;
+            }).join('') || '<tr><td colspan="6" style="padding:30px;text-align:center;color:var(--muted);">No fine records.</td></tr>';
+        }
+
+        // ─── TOAST ───────────────────────────────────────────────
+        function showToast(msg, bg = '#7c3aed') {
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.style.background = bg;
+            t.innerHTML = `<span>✓</span><span>${msg}</span>`;
+            document.body.appendChild(t);
+            setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(10px)'; setTimeout(() => t.remove(), 300); }, 3000);
+        }
+
+        function logoutUser() {
+            localStorage.removeItem('activeUser');
+            localStorage.removeItem('activeUserName');
+            window.location.href = '/login';
+        }
+
+        // ─── BOOT ────────────────────────────────────────────────
+        loadData();
+        setInterval(loadData, 30000); // refresh every 30 seconds
+    </script>
+</body>
+
+</html>

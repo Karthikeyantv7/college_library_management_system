@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" id="htmlRoot">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LibraManager — Library Management System</title>
+
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                    colors: {
+                        indigo: { 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' }
+                    }
+                }
+            }
+        };
+    </script>
+
+    <!-- Chart.js (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+
+<body class="bg-slate-900 text-slate-100 min-h-screen flex">
+
+    <!-- ===================== SIDEBAR OVERLAY (mobile) ===================== -->
+    <div id="overlay" onclick="closeSidebar()" class="fixed inset-0 bg-black/60 z-20 hidden"></div>
+
+    <!-- ===================== SIDEBAR ===================== -->
+    <aside id="sidebar"
+        class="sidebar fixed top-0 left-0 h-full w-64 bg-slate-800 border-r border-slate-700 z-30 flex flex-col -translate-x-full lg:translate-x-0">
+
+        <!-- Brand -->
+        <div class="flex items-center gap-3 px-6 py-5 border-b border-slate-700">
+            <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13
+               C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13
+               C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13
+               C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+            </div>
+            <div>
+                <p class="font-bold text-white text-sm leading-tight">LibraManager</p>
+                <p class="text-slate-400 text-xs">Admin Panel</p>
+            </div>
+        </div>
+
+        <!-- Nav Links -->
+        <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 mb-2">Main</p>
+
+            <a onclick="showSection('dashboard')" id="nav-dashboard"
+                class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-slate-300 hover:text-white hover:bg-slate-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Dashboard
+            </a>
+
+            <a onclick="showSection('books')" id="nav-books"
+                class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-slate-300 hover:text-white hover:bg-slate-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13
+               C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13
+               C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13
+               C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                Books
+            </a>
+
+            <a onclick="showSection('students')" id="nav-students"
+                class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-slate-300 hover:text-white hover:bg-slate-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                Students
+            </a>
+
+            <a onclick="showSection('faculty')" id="nav-faculty"
+                class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-slate-300 hover:text-white hover:bg-slate-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Faculty
+            </a>
+
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 mb-2 pt-4">Circulation</p>
+
+            <a onclick="showSection('requests')" id="nav-requests"
+                class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-slate-300 hover:text-white hover:bg-slate-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+                Book Requests
+            </a>
+
+
+
+            <a onclick="showSection('return')" id="nav-return"
+                class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-slate-300 hover:text-white hover:bg-slate-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                </svg>
+                Return Book
+            </a>
+
+            <a onclick="showSection('history')" id="nav-history"
+                class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-slate-300 hover:text-white hover:bg-slate-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Issue History
+            </a>
+
+            <a onclick="showSection('fines')" id="nav-fines"
+                class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-slate-300 hover:text-white hover:bg-slate-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2
+               m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1
+               m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Fine Report
+            </a>
+
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 mb-2 pt-4">Settings</p>
+
+            <a onclick="showSection('addadmin')" id="nav-addadmin"
+                class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-slate-300 hover:text-white hover:bg-slate-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+                Add Admin
+            </a>
+        </nav>
+
+        <!-- Admin Footer -->
+        <div class="px-4 py-4 border-t border-slate-700">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-sm font-bold">A
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-white" id="sidebarUserName">Admin</p>
+                    <a href="javascript:void(0)" onclick="logoutUser()"
+                        class="text-xs text-rose-400 hover:text-rose-300 transition-colors">Logout</a>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ===================== MAIN CONTENT ===================== -->
+    <div class="flex-1 flex flex-col lg:ml-64 min-h-screen">
+
+        <!-- Top Bar -->
+        <header
+            class="sticky top-0 z-10 bg-slate-900/95 backdrop-blur border-b border-slate-700 px-4 lg:px-8 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <!-- Mobile hamburger -->
+                <button onclick="toggleSidebar()"
+                    class="lg:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+                <div>
+                    <h1 id="pageTitle" class="text-lg font-bold text-white">Dashboard</h1>
+                    <p id="pageDate" class="text-xs text-slate-400"></p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="relative hidden sm:block">
+                    <svg class="w-4 h-4 absolute left-3 top-2.5 text-slate-400" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input type="text" placeholder="Quick search…"
+                        class="pl-9 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-300 placeholder-slate-500 focus:border-indigo-500 w-52" />
+                </div>
+                <!-- Theme Toggle -->
+                <button onclick="toggleDashboardTheme()" id="dashThemeBtn" title="Toggle dark/light mode"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:border-indigo-500 hover:text-white text-xs font-medium transition-all">
+                    <span id="dashThemeIcon">🌙</span>
+                    <span id="dashThemeLabel">Dark</span>
+                </button>
+                <div class="relative">
+                    <button onclick="toggleNotificationsPanel()"
+                        class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 relative">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                        <span id="notifBadge"
+                            class="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-500 rounded-full hidden"></span>
+                    </button>
+                    <!-- Notifications Dropdown -->
+                    <div id="notifPanel"
+                        class="hidden absolute right-0 mt-2 w-80 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl py-2 z-50">
+                        <div class="px-4 py-2 border-b border-slate-700 font-semibold text-white">Notifications</div>
+                        <div id="notifList" class="max-h-64 overflow-y-auto w-full">
+                            <div class="px-4 py-3 text-sm text-slate-400 text-center">No new notifications</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- =============== SECTIONS =============== -->
+        <main class="flex-1 p-4 lg:p-8">
+
+            <!-- DASHBOARD -->
+            <section id="sec-dashboard" class="section-content fade-in">
+                <!-- Stat Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+                    <div class="stat-card bg-slate-800 rounded-2xl p-5 border border-slate-700">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-11 h-11 rounded-xl bg-indigo-600/20 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                </svg>
+                            </div>
+                            <span class="badge bg-indigo-600/20 text-indigo-400">+12%</span>
+                        </div>
+                        <p class="text-3xl font-bold text-white stat-number" id="stat-totalBooks">0</p>
+                        <p class="text-sm text-slate-400 mt-1">Total Books</p>
+                    </div>
+
+                    <div class="stat-card bg-slate-800 rounded-2xl p-5 border border-slate-700">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-11 h-11 rounded-xl bg-emerald-600/20 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <span class="badge bg-emerald-600/20 text-emerald-400">+5%</span>
+                        </div>
+                        <p class="text-3xl font-bold text-white stat-number" id="stat-availBooks">0</p>
+                        <p class="text-sm text-slate-400 mt-1">Available Books</p>
+                    </div>
+
+                    <div class="stat-card bg-slate-800 rounded-2xl p-5 border border-slate-700">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-11 h-11 rounded-xl bg-violet-600/20 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-violet-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </div>
+                            <span class="badge bg-violet-600/20 text-violet-400">+8%</span>
+                        </div>
+                        <p class="text-3xl font-bold text-white stat-number" id="stat-totalStudents">0</p>
+                        <p class="text-sm text-slate-400 mt-1">Total Members</p>
+                    </div>
+
+                    <div class="stat-card bg-slate-800 rounded-2xl p-5 border border-slate-700">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-11 h-11 rounded-xl bg-amber-600/20 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                </svg>
+                            </div>
+                            <span class="badge bg-amber-600/20 text-amber-400 badge-pulse">Active</span>
+                        </div>
+                        <p class="text-3xl font-bold text-white stat-number" id="stat-issuedBooks">0</p>
+                        <p class="text-sm text-slate-400 mt-1">Books Issued</p>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8">
+                    <div class="chart-card lg:col-span-2 bg-slate-800 rounded-2xl p-5 border border-slate-700">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold text-white">Monthly Issue Statistics</h3>
+                            <span class="badge bg-slate-700 text-slate-300">2024–2025</span>
+                        </div>
+                        <div class="chart-container"><canvas id="barChart"></canvas></div>
+                    </div>
+                    <div class="chart-card bg-slate-800 rounded-2xl p-5 border border-slate-700">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold text-white">Availability</h3>
+                            <span class="badge bg-slate-700 text-slate-300">Live</span>
+                        </div>
+                        <div class="chart-container"><canvas id="pieChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700">
+                    <h3 class="font-semibold text-white mb-4">Recent Activity</h3>
+                    <div id="recentActivity" class="space-y-3"></div>
+                </div>
+            </section>
+
+            <!-- BOOKS -->
+            <section id="sec-books" class="section-content fade-in hidden">
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    <!-- Add Form -->
+                    <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700">
+                        <h3 class="font-semibold text-white mb-4">Add New Book</h3>
+                        <form id="bookForm" onsubmit="addBook(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Book Title *</label>
+                                <input id="bTitle" type="text" required placeholder="e.g. Clean Code"
+                                    class="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 focus:border-indigo-500" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Author *</label>
+                                <input id="bAuthor" type="text" required placeholder="e.g. Robert C. Martin"
+                                    class="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 focus:border-indigo-500" />
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-400 mb-1">ISBN *</label>
+                                    <input id="bIsbn" type="text" required placeholder="978-…"
+                                        class="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 focus:border-indigo-500" />
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-400 mb-1">Copies *</label>
+                                    <input id="bCopies" type="number" required min="1" value="1"
+                                        class="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white focus:border-indigo-500" />
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Genre</label>
+                                <select id="bGenre"
+                                    class="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white focus:border-indigo-500">
+                                    <option>Technology</option>
+                                    <option>Science</option>
+                                    <option>Literature</option>
+                                    <option>Mathematics</option>
+                                    <option>History</option>
+                                    <option>Reference</option>
+                                </select>
+                            </div>
+                            <button type="submit" id="addBookBtn"
+                                class="btn-primary w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium text-sm">
+                                <span class="btn-text">Add Book</span>
+                                <svg class="btn-spin w-4 h-4 mx-auto animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                        stroke-width="4" />
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="xl:col-span-2 bg-slate-800 rounded-2xl p-5 border border-slate-700">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                            <h3 class="font-semibold text-white">Book Catalog</h3>
+                            <div class="relative">
+                                <svg class="w-4 h-4 absolute left-3 top-2.5 text-slate-400" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                <input type="text" id="bookSearch" oninput="renderBooks()" placeholder="Search books…"
+                                    class="pl-9 pr-4 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm text-slate-300 placeholder-slate-500 focus:border-indigo-500 w-full sm:w-52" />
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto rounded-xl border border-slate-700"
+                            style="max-height:420px;overflow-y:auto;">
+                            <table class="w-full text-sm text-left">
+                                <thead>
+                                    <tr class="text-slate-400 text-xs uppercase tracking-wide">
+                                        <th class="px-4 py-3">Title</th>
+                                        <th class="px-4 py-3">Author</th>
+                                        <th class="px-4 py-3">Genre</th>
+                                        <th class="px-4 py-3 text-center">Copies</th>
+                                        <th class="px-4 py-3 text-center">Avail.</th>
+                                        <th class="px-4 py-3 text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bookTableBody" class="divide-y divide-slate-700 text-slate-300"></tbody>
+                            </table>
+                        </div>
+                        <div id="bookEmptyState" class="hidden py-16 flex flex-col items-center text-center">
+                            <div class="w-16 h-16 rounded-2xl bg-slate-700 flex items-center justify-center mb-3">
+                                <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13" />
+                                </svg>
+                            </div>
+                            <p class="text-slate-400 font-medium">No books found</p>
+                            <p class="text-slate-500 text-xs mt-1">Add your first book using the form.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STUDENTS -->
+            <section id="sec-students" class="section-content fade-in hidden">
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700">
+                        <h3 class="font-semibold text-white mb-4">Add Student</h3>
+                        <form id="studentForm" onsubmit="addStudent(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Full Name *</label>
+                                <input id="sName" required placeholder="John Doe"
+                                    class="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 focus:border-indigo-500" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Roll Number *</label>
+                                <input id="sRoll" required placeholder="CS2024001"
+                                    class="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 focus:border-indigo-500" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Email *</label>
+                                <input id="sEmail" type="email" required placeholder="student@college.edu"
+                                    class="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 focus:border-indigo-500" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Department</label>
+                                <select id="sDept"
+                                    class="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white focus:border-indigo-500">
+                                    <option>Computer Science</option>
+                                    <option>Electronics</option>
+                                    <option>Mechanical</option>
+                                    <option>Civil</option>
+                                    <option>Physics</option>
+                                    <option>Chemistry</option>
+                                </select>
+                            </div>
+                            <button type="submit"
+                                class="btn-primary w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium text-sm">
+                                Add Student
+                            </button>
+                        </form>
+                    </div>
+                    <div class="xl:col-span-2 bg-slate-800 rounded-2xl p-5 border border-slate-700">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold text-white">Student Registry</h3>
+                            <span id="studentCount" class="badge bg-indigo-600/20 text-indigo-400"></span>
+                        </div>
+                        <div class="overflow-x-auto rounded-xl border border-slate-700"
+                            style="max-height:420px;overflow-y:auto;">
+                            <table class="w-full text-sm text-left">
+                                <thead>
+                                    <tr class="text-slate-400 text-xs uppercase tracking-wide">
+                                        <th class="px-4 py-3">Name</th>
+                                        <th class="px-4 py-3">Roll No.</th>
+                                        <th class="px-4 py-3">Email</th>
+                                        <th class="px-4 py-3">Dept</th>
+                                        <th class="px-4 py-3 text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="studentTableBody" class="divide-y divide-slate-700 text-slate-300"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FACULTY -->
+            <section id="sec-faculty" class="section-content fade-in hidden">
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700">
+                        <h3 class="font-semibold text-white mb-4">Add Faculty</h3>
+                        <form id="facultyForm" onsubmit="addFaculty(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Full Name *</label>
+                                <input id="fName" required placeholder="Prof. Jane Smith"
+                                    class="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 focus:border-indigo-500" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Employee ID *</label>
+                                <input id="fEmpId" required placeholder="FAC001"
+                                    class="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 focus:border-indigo-500" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Email *</label>
+                                <input id="fEmail" type="email" required placeholder="faculty@college.edu"
+                                    class="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 focus:border-indigo-500" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Department</label>
+                                <select id="fDept"
+                                    class="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white focus:border-indigo-500">
+                                    <option>Computer Science</option>
+                                    <option>Electronics</option>
+                                    <option>Mechanical</option>
+                                    <option>Civil</option>
+                                    <option>Physics</option>
+                                    <option>Chemistry</option>
+                                </select>
+                            </div>
+                            <button type="submit"
+                                class="btn-primary w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium text-sm">
+                                Add Faculty
+                            </button>
+                        </form>
+                    </div>
+                    <div class="xl:col-span-2 bg-slate-800 rounded-2xl p-5 border border-slate-700">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold text-white">Faculty Directory</h3>
+                            <span id="facultyCount" class="badge bg-indigo-600/20 text-indigo-400"></span>
+                        </div>
+                        <div class="overflow-x-auto rounded-xl border border-slate-700"
+                            style="max-height:420px;overflow-y:auto;">
+                            <table class="w-full text-sm text-left">
+                                <thead>
+                                    <tr class="text-slate-400 text-xs uppercase tracking-wide">
+                                        <th class="px-4 py-3">Name</th>
+                                        <th class="px-4 py-3">Emp ID</th>
+                                        <th class="px-4 py-3">Email</th>
+                                        <th class="px-4 py-3">Dept</th>
+                                        <th class="px-4 py-3 text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="facultyTableBody" class="divide-y divide-slate-700 text-slate-300"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- BOOK REQUESTS -->
+            <section id="sec-requests" class="section-content fade-in hidden">
+                <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold text-white">Pending Book Requests</h3>
+                        <span id="requestCount" class="badge bg-indigo-600/20 text-indigo-400"></span>
+                    </div>
+                    <div class="overflow-x-auto rounded-xl border border-slate-700"
+                        style="max-height:420px;overflow-y:auto;">
+                        <table class="w-full text-sm text-left">
+                            <thead>
+                                <tr class="text-slate-400 text-xs uppercase tracking-wide">
+                                    <th class="px-4 py-3">Req ID</th>
+                                    <th class="px-4 py-3">Book</th>
+                                    <th class="px-4 py-3">Requester ID</th>
+                                    <th class="px-4 py-3">Role</th>
+                                    <th class="px-4 py-3">Request Date</th>
+                                    <th class="px-4 py-3">Status</th>
+                                    <th class="px-4 py-3 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="requestTableBody" class="divide-y divide-slate-700 text-slate-300">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+
+
+            <!-- RETURN BOOK -->
+            <section id="sec-return" class="section-content fade-in hidden">
+                <div class="max-w-2xl mx-auto">
+                    <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-amber-600/20 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-white">Return a Book</h3>
+                                <p class="text-xs text-slate-400">Enter Issue ID to process return &amp; calculate fine
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex gap-3 mb-5">
+                            <input id="returnIssueId" type="text" placeholder="Enter Issue ID (e.g. ISS-001)"
+                                class="flex-1 px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 focus:border-indigo-500" />
+                            <button onclick="lookupIssue()"
+                                class="btn-primary px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium text-sm">
+                                Search
+                            </button>
+                        </div>
+                        <div id="returnDetails" class="hidden space-y-4">
+                            <div class="bg-slate-900 rounded-xl p-4 border border-slate-700 space-y-2 text-sm">
+                                <div class="flex justify-between"><span class="text-slate-400">Book:</span><span
+                                        class="text-white font-medium" id="retBook">—</span></div>
+                                <div class="flex justify-between"><span class="text-slate-400">Borrower:</span><span
+                                        class="text-white font-medium" id="retBorrower">—</span></div>
+                                <div class="flex justify-between"><span class="text-slate-400">Issue Date:</span><span
+                                        class="text-white" id="retIssueDate">—</span></div>
+                                <div class="flex justify-between"><span class="text-slate-400">Due Date:</span><span
+                                        class="text-white" id="retDue">—</span></div>
+                                <div class="flex justify-between"><span class="text-slate-400">Overdue Days:</span><span
+                                        id="retOverdueDays" class="font-bold text-red-400">—</span></div>
+                                <div class="flex justify-between border-t border-slate-700 pt-2 mt-2">
+                                    <span class="text-slate-400 font-semibold">Fine Amount:</span>
+                                    <span id="retFine" class="text-xl font-bold text-amber-400">₹0</span>
+                                </div>
+                            </div>
+                            <div id="returnSuccessAlert"
+                                class="hidden p-3 bg-emerald-600/20 border border-emerald-600/40 rounded-lg flex items-center gap-2">
+                                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <p class="text-emerald-300 text-sm font-medium">Book returned successfully!</p>
+                            </div>
+                            <button id="confirmReturnBtn" onclick="confirmReturn()"
+                                class="btn-primary w-full py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-medium text-sm">
+                                Confirm Return
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ISSUE HISTORY -->
+            <section id="sec-history" class="section-content fade-in hidden">
+                <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                        <h3 class="font-semibold text-white">Issue History</h3>
+                        <select id="historyFilter" onchange="renderHistory()"
+                            class="px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm text-slate-300 focus:border-indigo-500">
+                            <option value="all">All Records</option>
+                            <option value="active">Active</option>
+                            <option value="returned">Returned</option>
+                        </select>
+                    </div>
+                    <div class="overflow-x-auto rounded-xl border border-slate-700">
+                        <table class="w-full text-sm text-left">
+                            <thead>
+                                <tr class="text-slate-400 text-xs uppercase tracking-wide">
+                                    <th class="px-4 py-3">Issue ID</th>
+                                    <th class="px-4 py-3">Book</th>
+                                    <th class="px-4 py-3">Borrower</th>
+                                    <th class="px-4 py-3">Issue Date</th>
+                                    <th class="px-4 py-3">Due Date</th>
+                                    <th class="px-4 py-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody" class="divide-y divide-slate-700 text-slate-300"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FINE REPORT -->
+            <section id="sec-fines" class="section-content fade-in hidden">
+                <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 mb-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                        <div class="stat-card bg-slate-900 rounded-xl p-4 border border-slate-700">
+                            <p class="text-xs text-slate-400 mb-1">Total Overdue</p>
+                            <p class="text-2xl font-bold text-red-400" id="fStatOverdue">0</p>
+                        </div>
+                        <div class="stat-card bg-slate-900 rounded-xl p-4 border border-slate-700">
+                            <p class="text-xs text-slate-400 mb-1">Fine Collected</p>
+                            <p class="text-2xl font-bold text-amber-400" id="fStatCollected">₹0</p>
+                        </div>
+                        <div class="stat-card bg-slate-900 rounded-xl p-4 border border-slate-700">
+                            <p class="text-xs text-slate-400 mb-1">Fine Pending</p>
+                            <p class="text-2xl font-bold text-rose-400" id="fStatPending">₹0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                        <h3 class="font-semibold text-white">Overdue Books &amp; Fines</h3>
+                        <select id="fineFilter" onchange="renderFines()"
+                            class="px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm text-slate-300 focus:border-indigo-500">
+                            <option value="all">All</option>
+                            <option value="paid">Paid</option>
+                            <option value="unpaid">Unpaid</option>
+                        </select>
+                    </div>
+                    <div class="overflow-x-auto rounded-xl border border-slate-700">
+                        <table class="w-full text-sm text-left">
+                            <thead>
+                                <tr class="text-slate-400 text-xs uppercase tracking-wide">
+                                    <th class="px-4 py-3">Issue ID</th>
+                                    <th class="px-4 py-3">Book</th>
+                                    <th class="px-4 py-3">Borrower</th>
+                                    <th class="px-4 py-3">Days Over</th>
+                                    <th class="px-4 py-3">Fine</th>
+                                    <th class="px-4 py-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fineTableBody" class="divide-y divide-slate-700"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ADD ADMIN -->
+            <section id="sec-addadmin" class="section-content fade-in hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                    <!-- Create Admin Form -->
+                    <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 h-fit">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-600/20 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-white">Add New Admin</h3>
+                                <p class="text-xs text-slate-400">Create a new administrator account</p>
+                            </div>
+                        </div>
+
+                        <!-- Success alert -->
+                        <div id="addAdminAlert"
+                            class="hidden mb-4 p-3 bg-emerald-600/20 border border-emerald-600/40 rounded-lg flex items-center gap-2">
+                            <svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p class="text-emerald-300 text-sm font-medium" id="addAdminAlertText"></p>
+                        </div>
+
+                        <form id="addAdminForm" onsubmit="addAdminSubmit(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Admin Username *</label>
+                                <input id="newAdminName" type="text" required
+                                    class="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white focus:border-indigo-500"
+                                    placeholder="e.g. superadmin" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Password *</label>
+                                <input id="newAdminPass" type="password" required
+                                    class="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white focus:border-indigo-500"
+                                    placeholder="••••••••" />
+                            </div>
+                            <button type="submit" id="addAdminSubmitBtn"
+                                class="btn-primary w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2">
+                                <span class="btn-text">Create Admin Account</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Admins List -->
+                    <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 flex flex-col h-fit">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold text-white">Administrators</h3>
+                            <span id="adminCountBadge"
+                                class="badge bg-indigo-600/20 text-indigo-400 px-2 py-0.5 rounded-full text-xs font-medium">0
+                                Total</span>
+                        </div>
+                        <div class="overflow-y-auto rounded-xl border border-slate-700 mt-2 max-h-96">
+                            <table class="w-full text-sm text-left">
+                                <thead class="sticky top-0 bg-slate-900 z-10 border-b border-slate-700">
+                                    <tr class="text-slate-400 text-xs uppercase tracking-wide">
+                                        <th class="px-4 py-3">ID</th>
+                                        <th class="px-4 py-3">Username</th>
+                                        <th class="px-4 py-3 text-right">Added</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminsTableBody" class="divide-y divide-slate-700 text-slate-300">
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main><!-- /main -->
+    </div><!-- /flex-1 -->
+
+    <!-- Theme Init (runs before app.js so flash is prevented) -->
+    <script>
+        (function () {
+            const saved = localStorage.getItem('lm-theme') || 'dark';
+            const html = document.getElementById('htmlRoot');
+            if (saved === 'light') {
+                html.classList.remove('dark');
+                html.classList.add('light');
+            } else {
+                html.classList.add('dark');
+                html.classList.remove('light');
+            }
+        })();
+    </script>
+    <!-- Application Logic -->
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+
+</body>
+
+</html>
