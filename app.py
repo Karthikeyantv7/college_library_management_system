@@ -304,11 +304,26 @@ def add_student():
 @app.route('/api/students/<int:id>', methods=['DELETE'])
 def delete_student(id):
     student = Student.query.get(id)
-    if student:
-        db.session.delete(student)
-        db.session.commit()
-        return '', 204
-    return jsonify({'error': 'Student not found'}), 404
+    if not student:
+        return jsonify({'error': 'Student not found'}), 404
+
+    # Check if the student has any unreturned books in issued_books
+    # The user_id in issued_books stores the student name
+    active_issues = IssuedBook.query.filter(
+        IssuedBook.user_id == student.student_name,
+        IssuedBook.status.in_(['ISSUED', 'APPROVED'])
+    ).count()
+
+    if active_issues > 0:
+        return jsonify({
+            'error': 'This user cannot be removed because they still have borrowed books. '
+                     'Please ensure all books are returned before deleting the account.',
+            'activeBooks': active_issues
+        }), 409
+
+    db.session.delete(student)
+    db.session.commit()
+    return '', 204
 
 @app.route('/api/faculty', methods=['GET'])
 def get_faculty_list():
@@ -330,11 +345,25 @@ def add_faculty():
 @app.route('/api/faculty/<int:id>', methods=['DELETE'])
 def delete_faculty(id):
     faculty = Faculty.query.get(id)
-    if faculty:
-        db.session.delete(faculty)
-        db.session.commit()
-        return '', 204
-    return jsonify({'error': 'Faculty not found'}), 404
+    if not faculty:
+        return jsonify({'error': 'Faculty not found'}), 404
+
+    # Check if the faculty has any unreturned books in issued_books
+    active_issues = IssuedBook.query.filter(
+        IssuedBook.user_id == faculty.faculty_name,
+        IssuedBook.status.in_(['ISSUED', 'APPROVED'])
+    ).count()
+
+    if active_issues > 0:
+        return jsonify({
+            'error': 'This user cannot be removed because they still have borrowed books. '
+                     'Please ensure all books are returned before deleting the account.',
+            'activeBooks': active_issues
+        }), 409
+
+    db.session.delete(faculty)
+    db.session.commit()
+    return '', 204
 
 @app.route('/api/issues', methods=['GET'])
 def get_issues():
@@ -346,12 +375,25 @@ def get_issues():
              'RETURNED': 'returned'
         }
         mapped_status = status_map.get(i.status, i.status.lower())
+
+        # Resolve borrower type from BookRequest table, or by checking student/faculty names
+        borrower_type = 'unknown'
+        book_req = BookRequest.query.filter_by(user_id=i.user_id, book_id=i.book_id).first()
+        if book_req:
+            borrower_type = book_req.role  # 'student' or 'faculty'
+        else:
+            # Fallback: check if user_id matches a student or faculty name
+            if Student.query.filter_by(student_name=i.user_id).first():
+                borrower_type = 'student'
+            elif Faculty.query.filter_by(faculty_name=i.user_id).first():
+                borrower_type = 'faculty'
+
         res.append({
             'id': f"ISS-{i.issue_id:03d}",
             'bookId': i.book_id,
             'bookTitle': i.book.title if i.book else 'Unknown',
             'borrower': i.user_id,
-            'borrowerType': 'unknown',
+            'borrowerType': borrower_type,
             'issueDate': i.issue_date,
             'dueDate': i.due_date,
             'status': mapped_status,
@@ -550,8 +592,31 @@ def get_my_books(user_id):
         })
 
     return jsonify(items)
+def sync_available_copies():
+    """Recalculate available_copies for every book based on actual issued_books records.
+    available_copies = total_copies - (number of non-returned issued_books for that book)
+    """
+    books = Book.query.all()
+    for book in books:
+        # Count copies that are currently out (ISSUED or APPROVED, not RETURNED)
+        active_count = IssuedBook.query.filter(
+            IssuedBook.book_id == book.book_id,
+            IssuedBook.status.in_(['ISSUED', 'APPROVED'])
+        ).count()
+        correct_available = book.total_copies - active_count
+        if book.available_copies != correct_available:
+            print(f"  Syncing {book.book_id} ({book.title}): "
+                  f"available {book.available_copies} -> {correct_available} "
+                  f"(total={book.total_copies}, active_issues={active_count})")
+            book.available_copies = correct_available
+    db.session.commit()
+    print("Available copies synced with issued_books records.")
+
+
 if __name__ == '__main__':
     with app.app_context():
         # Sanity check mapping for empty database
         db.create_all()
+        # Fix any drift in available_copies
+        sync_available_copies()
     app.run(debug=True, port=5000)
